@@ -40,6 +40,7 @@ exit 0 = ran, 2 = could not run.
 import argparse
 import csv
 import json
+import statistics
 import sys
 from datetime import datetime
 
@@ -177,7 +178,7 @@ def main():
         if len(c["orders"]) > 1:
             second_gaps.append((c["orders"][1]["date"] - c["first"]).days)
     second_gaps.sort()
-    median_gap = second_gaps[len(second_gaps) // 2] if second_gaps else None
+    median_gap = statistics.median(second_gaps) if second_gaps else None
 
     report = []
     for name in sorted(groups):

@@ -96,6 +96,30 @@ def test_margin(tmp):
 
 def test_cohort(tmp):
     print("cohort_read.py")
+    # For an even number of repeat customers, both middle gaps contribute.
+    path = os.path.join(tmp, "median.csv")
+    write_csv(path, [["Customer", "Order date", "Total"],
+                     ["a", "2026-01-01", 100], ["a", "2026-01-11", 50],
+                     ["b", "2026-01-01", 100], ["b", "2026-01-31", 50]])
+    rc, data, err = run_json("cohort_read.py", path)
+    check("even-sized second-order gaps average the two middle values",
+          rc == 0 and data["summary"]["median_days_to_second_order"] == 20,
+          str(data) if rc == 0 else err)
+    for label, gaps, expected in (("odd", [10, 20, 30], 20),
+                                  ("fractional", [10, 11], 10.5),
+                                  ("single", [10], 10), ("none", [], None)):
+        rows = [["Customer", "Order date", "Total"]]
+        for i, gap in enumerate(gaps):
+            first = date(2026, 1, 1)
+            rows.extend([[str(i), first.isoformat(), 100],
+                         [str(i), (first + timedelta(days=gap)).isoformat(), 50]])
+        if not gaps:
+            rows.append(["a", "2026-01-01", 100])
+        write_csv(path, rows)
+        rc, data, err = run_json("cohort_read.py", path)
+        check("%s second-order median" % label,
+              rc == 0 and data["summary"]["median_days_to_second_order"] == expected,
+              str(data) if rc == 0 else err)
     # One brand-new customer must not blank out a segment full of mature ones.
     path = os.path.join(tmp, "orders.csv")
     today = date(2026, 7, 27)
