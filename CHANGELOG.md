@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Subscription survival no longer matches active-status fragments inside
+  `inactive` or `deactivated`, which silently excluded ended subscriptions from
+  the churn split. Regression cases preserve recognized non-terminal statuses.
+
 ## [2.3.0] - 2026-07-27
 
 Second QA round. The graders ran the scripts against their own fixtures instead

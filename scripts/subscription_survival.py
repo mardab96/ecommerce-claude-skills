@@ -45,7 +45,8 @@ ALIASES = {
 INVOLUNTARY = re.compile(
     r"payment|card|declin|dunn|fail|expire|insufficient|chargeback|billing error", re.I)
 PAUSED = re.compile(r"paus|skip|hold|snooz", re.I)
-ACTIVE = re.compile(r"activ|current|live|trial|pending|onboard|scheduled", re.I)
+# Match status words, not active-looking substrings in inactive/deactivated.
+ACTIVE = re.compile(r"\b(?:activ\w*|current|live|trial\w*|pending|onboard\w*|scheduled)\b", re.I)
 
 
 def norm(s):

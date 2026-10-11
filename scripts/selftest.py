@@ -212,6 +212,33 @@ def test_shipping(tmp):
 
 def test_subscription(tmp):
     print("subscription_survival.py")
+    # An ended status must not match the active substring inside its name.
+    path = os.path.join(tmp, "inactive.csv")
+    write_csv(path, [
+        ["Subscriber", "Status", "Cycles", "Churn type"],
+        ["a", "inactive", 3, "voluntary"],
+        ["b", "deactivated", 2, "involuntary"],
+        ["c", "active", 2, ""],
+        ["d", "trialing", 0, ""],
+    ])
+    rc, data, err = run_json("subscription_survival.py", path)
+    check("inactive and deactivated subscribers remain in the endings split",
+          rc == 0 and data["ended"] == 2
+          and data["split"]["voluntary"] == 1
+          and data["split"]["involuntary"] == 1,
+          str(data) if rc == 0 else err)
+
+    # Preserve all recognized non-terminal status families.
+    path = os.path.join(tmp, "active_statuses.csv")
+    statuses = ("active", "current", "live", "trial", "trialing", "pending",
+                "onboard", "onboarding", "scheduled", "ACTIVE")
+    write_csv(path, [["Subscriber", "Status", "Cycles"]]
+              + [[str(i), status, 2] for i, status in enumerate(statuses)])
+    rc, data, err = run_json("subscription_survival.py", path)
+    check("recognized non-terminal statuses are still active",
+          rc == 0 and data["subscribers"] == len(statuses) and data["ended"] == 0,
+          str(data) if rc == 0 else err)
+
     # A trialing subscriber who never billed is not a cancellation.
     path = os.path.join(tmp, "subs.csv")
     write_csv(path, [
