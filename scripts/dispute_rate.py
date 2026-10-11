@@ -31,6 +31,7 @@ exit 0 = ran, 2 = could not run.
 import argparse
 import csv
 import json
+import math
 import re
 import sys
 from datetime import datetime
@@ -75,10 +76,10 @@ def money(raw):
     s = str(raw or "").strip()
     for ch in "()$£€ ,":
         s = s.replace(ch, "")
-    try:
-        return abs(float(s))
-    except ValueError:
-        return 0.0
+    value = abs(float(s))
+    if not math.isfinite(value):
+        raise ValueError("amount must be finite")
+    return value
 
 
 def family_of(reason):
@@ -121,22 +122,36 @@ def main():
 
     volumes = {}
     for part in filter(None, args.orders_per_month.split(",")):
-        if "=" in part:
+        try:
             month, count = part.split("=", 1)
-            try:
-                volumes[month.strip()] = float(count)
-            except ValueError:
-                pass
+            month = month.strip()
+            if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
+                raise ValueError("expected YYYY-MM")
+            value = float(count)
+            if not math.isfinite(value) or value <= 0 or not value.is_integer():
+                raise ValueError("order volume must be a positive finite integer")
+            if month in volumes:
+                raise ValueError("duplicate month")
+            volumes[month] = value
+        except ValueError as exc:
+            print("invalid order volume %r: %s" % (part, exc), file=sys.stderr)
+            return 2
 
     disputes, undated = [], 0
-    for row in rows:
+    for row_number, row in enumerate(rows, start=2):
+        try:
+            amount = money(row.get(cm["amount"]))
+        except (TypeError, ValueError):
+            print("invalid amount at CSV row %d: expected a finite number" % row_number,
+                  file=sys.stderr)
+            return 2
         reason = str(row.get(cm["reason"], "")).strip()
         tdate = parse_date(row.get(cm["transaction_date"])) if cm.get("transaction_date") else None
         fdate = parse_date(row.get(cm["filed_date"])) if cm.get("filed_date") else None
         if tdate is None:
             undated += 1
         disputes.append({
-            "amount": money(row.get(cm["amount"])),
+            "amount": amount,
             "reason": reason,
             "family": family_of(reason),
             "month": (tdate or fdate).strftime("%Y-%m") if (tdate or fdate) else None,
