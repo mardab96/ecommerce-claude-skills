@@ -23,6 +23,7 @@ exit 0 = ran, 2 = could not run.
 import argparse
 import csv
 import json
+import statistics
 import sys
 
 ALIASES = {
@@ -148,7 +149,7 @@ def main():
             by_zone.append(s)
 
     values = sorted(o["value"] for o in orders)
-    median_value = values[len(values) // 2]
+    median_value = statistics.median(values)
     threshold_read = None
     if args.threshold is not None:
         below = [o for o in orders if o["value"] < args.threshold]

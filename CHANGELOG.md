@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Shipping recovery averages the two middle order values for an even-sized
+  sample instead of reporting the upper middle value. Regression cases cover
+  even, odd, single, decimal and repeated values.
+
 ## [2.3.0] - 2026-07-27
 
 Second QA round. The graders ran the scripts against their own fixtures instead

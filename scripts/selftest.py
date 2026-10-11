@@ -189,6 +189,20 @@ def test_promo(tmp):
 
 def test_shipping(tmp):
     print("shipping_recovery.py")
+    for label, values, expected in (
+        ("even", [10, 50], 30),
+        ("odd", [10, 30, 50], 30),
+        ("single", [20], 20),
+        ("decimal", [10.5, 20.5], 15.5),
+        ("repeated", [20, 20, 20, 20], 20),
+    ):
+        path = os.path.join(tmp, "shipping_median_%s.csv" % label)
+        write_csv(path, [["Order value", "Shipping charged", "Shipping cost"]]
+                  + [[value, 0, 5] for value in values])
+        rc, data, err = run_json("shipping_recovery.py", path, "--threshold", "40")
+        check("%s shipping median is correct" % label,
+              rc == 0 and data["threshold"]["median_order_value"] == expected,
+              str(data) if rc == 0 else err)
     # Refund rows carry a negative order value and belong to no band. The
     # overall total and the band table must not disagree about them.
     path = os.path.join(tmp, "ship.csv")
